@@ -6,7 +6,8 @@
   "scripts": {
     "start": "ts-node src/index.ts",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "example": "ts-node example/tls.ts"
   },
   "devDependencies": {
     "@types/jest": "^26.0.5",
