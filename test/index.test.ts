@@ -1,5 +1,7 @@
+import ESniffer from "../src/index";
+
 describe("sample", () => {
   it("test", () => {
-    expect(1).toBe(1);
+    const proxy = ESniffer.createServer().listen(8080);
   });
 });
