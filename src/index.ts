@@ -52,15 +52,14 @@ class ESniffer {
           path: `https://${fromClient.headers.host}${fromClient.url}`,
         },
         (fromServer) => {
-          toClient.writeHead(fromClient.statusCode || 500, fromServer.headers);
+          toClient.writeHead(fromServer.statusCode || 500, fromServer.headers);
           fromServer.pipe(toClient, { end: true });
+          toProxyServer.end();
         }
       );
-      fromClient.pipe(toProxyServer); // not end?
-      // WIP error handling
+      fromClient.pipe(toProxyServer);
     });
 
-    // WIP: need to wait?
     proxyServer.listen(port, "127.0.0.1", () => {
       console.log(`Proxy Server start listening: localhost:${port}`);
     });
@@ -87,8 +86,25 @@ class ESniffer {
         });
       }
     );
+
+    proxyServer.on("error", (e) => {
+      console.log("error event occurred on Proxy Server", e.message);
+    });
+    spoofingServer.on("error", (e) => {
+      console.log("error event occurred on Spoofing Server", e.message);
+    });
+    spoofingServer.on("tlsClientError", (e) => {
+      console.log(
+        "tlsClientError event occurred on Spoofing Server",
+        e.message
+      );
+    });
   }
 }
+
+process.on("uncaughtException", (e) => {
+  console.log("uncaughtException happened", e.message);
+});
 
 export default {
   ESniffer,
