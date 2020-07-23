@@ -13,23 +13,11 @@ type Opt = {
 };
 
 class ESniffer {
-  createSpoofingServer: (
-    reqListener: http.RequestListener
-  ) => http.Server | https.Server;
+  private proxyServer: http.Server;
+  private spoofingServer: http.Server;
 
   constructor(opt?: Opt) {
-    this.createSpoofingServer = (reqListener: http.RequestListener) => {
-      if (!opt?.secure) return http.createServer(reqListener);
-      const tlsOpt: ServerOptions = {
-        ...opt.secure,
-        SNICallback: SNICallback(opt.secure.key, opt.secure.cert),
-      };
-      return https.createServer(tlsOpt, reqListener);
-    };
-  }
-
-  listen(port: number) {
-    const proxyServer = http.createServer((fromClient, toClient) => {
+    this.proxyServer = http.createServer((fromClient, toClient) => {
       if (!fromClient.url) throw new Error("Target URL not found.");
       // TODO: http or https
       const toServer = https.request(fromClient.url, (fromServer) => {
@@ -39,8 +27,17 @@ class ESniffer {
       fromClient.pipe(toServer, { end: true });
     });
 
-    const spoofingServer = this.createSpoofingServer((fromClient, toClient) => {
-      const proxyAddress = proxyServer.address();
+    const createSpoofingServer = (reqListener: http.RequestListener) => {
+      if (!opt?.secure) return http.createServer(reqListener);
+      const tlsOpt: ServerOptions = {
+        ...opt.secure,
+        SNICallback: SNICallback(opt.secure.key, opt.secure.cert),
+      };
+      return https.createServer(tlsOpt, reqListener);
+    };
+
+    this.spoofingServer = createSpoofingServer((fromClient, toClient) => {
+      const proxyAddress = this.proxyServer.address();
       if (!isValidAddress(proxyAddress)) {
         throw new Error(`Invalid proxy address: ${proxyAddress}`);
       }
@@ -59,19 +56,21 @@ class ESniffer {
       );
       fromClient.pipe(toProxyServer);
     });
+  }
 
-    proxyServer.listen(port, "127.0.0.1", () => {
+  listen(port: number) {
+    this.proxyServer.listen(port, "127.0.0.1", () => {
       console.log(`Proxy Server start listening: localhost:${port}`);
     });
-    spoofingServer.listen(0, "127.0.0.1", () => {
+    this.spoofingServer.listen(0, "127.0.0.1", () => {
       console.log(`Spoofing Server start listening: localhost:0`);
     });
 
-    proxyServer.on(
+    this.proxyServer.on(
       "connect",
       (_: IncomingMessage, clientSocket: Socket, head: Buffer) => {
         console.log("CONNECT method");
-        const spoofingServerAddress = spoofingServer.address();
+        const spoofingServerAddress = this.spoofingServer.address();
         if (!isValidAddress(spoofingServerAddress)) {
           throw new Error(`Invalid proxy address: ${spoofingServerAddress}`);
         }
@@ -87,13 +86,13 @@ class ESniffer {
       }
     );
 
-    proxyServer.on("error", (e) => {
+    this.proxyServer.on("error", (e) => {
       console.log("error event occurred on Proxy Server", e.message);
     });
-    spoofingServer.on("error", (e) => {
+    this.spoofingServer.on("error", (e) => {
       console.log("error event occurred on Spoofing Server", e.message);
     });
-    spoofingServer.on("tlsClientError", (e) => {
+    this.spoofingServer.on("tlsClientError", (e) => {
       console.log(
         "tlsClientError event occurred on Spoofing Server",
         e.message
