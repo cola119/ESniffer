@@ -1,6 +1,7 @@
 {
   "name": "esniffer",
-  "version": "1.0.0",
+  "version": "0.1.0",
+  "description": "Modern network analyzer tool",
   "main": "dist/index.js",
   "license": "MIT",
   "scripts": {
@@ -26,5 +27,14 @@
   },
   "files": [
     "dist"
+  ],
+  "keywords": [
+    "charles",
+    "proxy",
+    "sniffing",
+    "sniffer",
+    "network",
+    "debug",
+    "hoxy"
   ]
 }

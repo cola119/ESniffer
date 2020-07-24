@@ -6,7 +6,6 @@ import { SNICallback } from "./SNI";
 import net, { Socket } from "net";
 import { isValidAddress } from "./utils";
 import { EventEmitter } from "events";
-import { EventTypes } from "./type";
 
 type Opt = {
   secure?: {
@@ -15,8 +14,19 @@ type Opt = {
   };
 };
 
+const EventType = {
+  LOG: "log",
+  ERROR: "error",
+  REQUEST: "request",
+  RESPONSE: "response",
+  INFO: "info",
+} as const;
+
 interface ESnifferEvent {
-  request: (request: http.IncomingMessage) => void;
+  [EventType.RESPONSE]: (response: http.IncomingMessage) => void;
+  [EventType.REQUEST]: (request: http.IncomingMessage) => void;
+  [EventType.INFO]: (info: string) => void;
+  [EventType.ERROR]: (error: Error) => void;
 }
 
 type ESnifferEmitter = StrictEventEmitter<EventEmitter, ESnifferEvent>;
@@ -31,7 +41,7 @@ class ESniffer extends (EventEmitter as { new (): ESnifferEmitter }) {
       if (!fromClient.url) throw new Error("Target URL not found.");
       const url = new URL(fromClient.url);
       const h = url.protocol.startsWith("https") ? https : http;
-      this.emit(EventTypes.REQUEST, fromClient);
+      this.emit(EventType.REQUEST, fromClient);
       const toServer = h.request(
         {
           headers: fromClient.headers,
@@ -42,6 +52,7 @@ class ESniffer extends (EventEmitter as { new (): ESnifferEmitter }) {
           hostname: url.hostname,
         },
         (fromServer) => {
+          this.emit(EventType.RESPONSE, fromServer);
           toClient.writeHead(fromServer.statusCode || 500, fromServer.headers);
           fromServer.pipe(toClient, { end: true });
         }
@@ -82,10 +93,13 @@ class ESniffer extends (EventEmitter as { new (): ESnifferEmitter }) {
 
   listen(port: number) {
     this.proxyServer.listen(port, "127.0.0.1", () => {
-      console.log(`Proxy Server start listening: localhost:${port}`);
+      this.emit(
+        EventType.INFO,
+        `Proxy Server start listening: localhost:${port}`
+      );
     });
     this.spoofingServer.listen(0, "127.0.0.1", () => {
-      console.log(`Spoofing Server start listening: localhost:0`);
+      this.emit(EventType.INFO, `Spoofing Server start listening: localhost:0`);
     });
 
     this.proxyServer.on(
@@ -109,23 +123,19 @@ class ESniffer extends (EventEmitter as { new (): ESnifferEmitter }) {
     );
 
     this.proxyServer.on("error", (e) => {
-      console.log("error event occurred on Proxy Server", e.message);
+      this.emit(EventType.ERROR, e);
     });
     this.spoofingServer.on("error", (e) => {
-      console.log("error event occurred on Spoofing Server", e.message);
+      this.emit(EventType.ERROR, e);
     });
     this.spoofingServer.on("tlsClientError", (e) => {
-      console.log(
-        "tlsClientError event occurred on Spoofing Server",
-        e.message
-      );
+      this.emit(EventType.ERROR, e);
+    });
+    process.on("uncaughtException", (e) => {
+      this.emit(EventType.ERROR, e);
     });
   }
 }
-
-process.on("uncaughtException", (e) => {
-  console.log("uncaughtException happened", e.message);
-});
 
 export default {
   ESniffer,
