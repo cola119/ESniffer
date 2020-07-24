@@ -10,3 +10,6 @@ proxy.listen(8080);
 proxy.on("request", (req) => {
   req.pipe(process.stdout);
 });
+proxy.on("response", (res) => {
+  res.pipe(process.stdout);
+});
