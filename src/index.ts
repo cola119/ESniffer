@@ -1,9 +1,12 @@
+import StrictEventEmitter from "strict-event-emitter-types";
 import http, { IncomingMessage } from "http";
 import https, { ServerOptions } from "https";
 import { SecureContextOptions } from "tls";
 import { SNICallback } from "./SNI";
 import net, { Socket } from "net";
 import { isValidAddress } from "./utils";
+import { EventEmitter } from "events";
+import { EventTypes } from "./type";
 
 type Opt = {
   secure?: {
@@ -12,15 +15,23 @@ type Opt = {
   };
 };
 
-class ESniffer {
+interface ESnifferEvent {
+  request: (request: http.IncomingMessage) => void;
+}
+
+type ESnifferEmitter = StrictEventEmitter<EventEmitter, ESnifferEvent>;
+
+class ESniffer extends (EventEmitter as { new (): ESnifferEmitter }) {
   private proxyServer: http.Server;
   private spoofingServer: http.Server;
 
   constructor(opt?: Opt) {
+    super();
     this.proxyServer = http.createServer((fromClient, toClient) => {
       if (!fromClient.url) throw new Error("Target URL not found.");
       const url = new URL(fromClient.url);
       const h = url.protocol.startsWith("https") ? https : http;
+      this.emit(EventTypes.REQUEST, fromClient);
       const toServer = h.request(
         {
           headers: fromClient.headers,

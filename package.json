@@ -1,13 +1,15 @@
 {
   "name": "esniffer",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/index.js",
   "license": "MIT",
   "scripts": {
     "start": "ts-node src/index.ts",
+    "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watch",
-    "example": "ts-node example/tls.ts"
+    "example": "ts-node example/tls.ts",
+    "prepublishOnly": "yarn build"
   },
   "devDependencies": {
     "@types/jest": "^26.0.5",
@@ -19,6 +21,10 @@
     "typescript": "^3.9.7"
   },
   "dependencies": {
-    "pem": "^1.14.4"
-  }
+    "pem": "^1.14.4",
+    "strict-event-emitter-types": "^2.0.0"
+  },
+  "files": [
+    "dist"
+  ]
 }
