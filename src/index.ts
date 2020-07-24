@@ -19,11 +19,22 @@ class ESniffer {
   constructor(opt?: Opt) {
     this.proxyServer = http.createServer((fromClient, toClient) => {
       if (!fromClient.url) throw new Error("Target URL not found.");
-      // TODO: http or https
-      const toServer = https.request(fromClient.url, (fromServer) => {
-        toClient.writeHead(fromServer.statusCode || 500, fromServer.headers);
-        fromServer.pipe(toClient, { end: true });
-      });
+      const url = new URL(fromClient.url);
+      const h = url.protocol.startsWith("https") ? https : http;
+      const toServer = h.request(
+        {
+          headers: fromClient.headers,
+          protocol: url.protocol,
+          method: fromClient.method,
+          port: url.port,
+          path: fromClient.url,
+          hostname: url.hostname,
+        },
+        (fromServer) => {
+          toClient.writeHead(fromServer.statusCode || 500, fromServer.headers);
+          fromServer.pipe(toClient, { end: true });
+        }
+      );
       fromClient.pipe(toServer, { end: true });
     });
 
