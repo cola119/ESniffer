@@ -1,6 +1,6 @@
 {
   "name": "esniffer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": "Kohei Ueno <kohei.ueno119@gmail.com>",
   "description": "Modern network analyze tool. Alternatives to Hoxy, Charles, etc.",
   "repository": {
