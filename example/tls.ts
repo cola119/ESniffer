@@ -13,3 +13,9 @@ proxy.on("request", (req) => {
 proxy.on("response", (res) => {
   res.pipe(process.stdout);
 });
+proxy.on("info", (info) => {
+  console.log(info);
+});
+proxy.on("error", (e) => {
+  console.error(e.message);
+});

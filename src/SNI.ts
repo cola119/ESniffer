@@ -7,8 +7,6 @@ export const SNICallback = (
   serviceKey: SecureContextOptions["key"],
   serviceCertificate: SecureContextOptions["cert"]
 ): CommonConnectionOptions["SNICallback"] => (serverName, cb) => {
-  console.log("SNICallback", serverName);
-
   if (cache.has(serverName)) {
     const ctx = cache.get(serverName);
     return cb(null, ctx);

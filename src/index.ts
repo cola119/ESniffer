@@ -105,7 +105,6 @@ class ESniffer extends (EventEmitter as { new (): ESnifferEmitter }) {
     this.proxyServer.on(
       "connect",
       (_: IncomingMessage, clientSocket: Socket, head: Buffer) => {
-        console.log("CONNECT method");
         const spoofingServerAddress = this.spoofingServer.address();
         if (!isValidAddress(spoofingServerAddress)) {
           throw new Error(`Invalid proxy address: ${spoofingServerAddress}`);
