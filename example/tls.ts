@@ -8,10 +8,10 @@ const proxy = ESniffer.createServer({ secure: { key, cert } });
 proxy.listen(8080);
 
 proxy.on("request", (req) => {
-  req.pipe(process.stdout);
+  console.log(req.url);
 });
 proxy.on("response", (res) => {
-  res.pipe(process.stdout);
+  console.log(res.statusCode);
 });
 proxy.on("info", (info) => {
   console.log(info);
